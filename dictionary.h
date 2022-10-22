@@ -46,5 +46,5 @@ void printDictionary(std::vector<std::string> &dictionary, int num)
             counter--;
         }
     }
-    std::cout << std::endl;
+    std::cout << "..." << std::endl;
 }
