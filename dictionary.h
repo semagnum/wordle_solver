@@ -1,10 +1,11 @@
-#include <set>
+#include <vector>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "frequency.h"
 
-unsigned int initializeDictionary(std::set<std::string> &dictionary, std::string filename, unsigned int wordSize)
+unsigned int initializeDictionary(std::vector<std::string> &dictionary, std::string filename, unsigned int wordSize)
 {
     auto wordCount = 0;
     std::fstream dictFile;
@@ -19,7 +20,7 @@ unsigned int initializeDictionary(std::set<std::string> &dictionary, std::string
             ss >> trimmed_string;
             if (trimmed_string.size() == wordSize)
             {
-                dictionary.insert(trimmed_string);
+                dictionary.push_back(trimmed_string);
                 wordCount++;
             }
         }
@@ -29,7 +30,7 @@ unsigned int initializeDictionary(std::set<std::string> &dictionary, std::string
     return 0;
 }
 
-void printDictionary(std::set<std::string> &dictionary, int num)
+void printDictionary(std::vector<std::string> &dictionary, int num)
 {
     std::cout << "Dictionary: ";
 

@@ -1,19 +1,16 @@
-#include <set>
+#include <vector>
 #include <string>
-#include <iostream>
+#include <map>
 #include <array>
+
+#include <iostream>
+#include <algorithm>
+
 #include "dictionary.h"
+#include "correctness.h"
+#include "config.h"
 
-const unsigned int WORD_SIZE = 5;
-
-enum correctnessType
-{
-    CORRECT_POSITION,
-    WRONG_POSITION,
-    WRONG_LETTER
-};
-
-void parseGuess(std::set<std::string> &dictionary, std::string &guess)
+void parseGuess(std::vector<std::string> &dictionary, std::string &guess)
 {
     std::array<correctnessType, WORD_SIZE> status;
     for (unsigned int index = 0; index < WORD_SIZE; index++)
@@ -34,54 +31,119 @@ void parseGuess(std::set<std::string> &dictionary, std::string &guess)
         status[index] = response;
     }
 
+    std::map<char, unsigned int> correctPositions, wrongPositions, wrongLetters;
     for (unsigned int index = 0; index < WORD_SIZE; index++)
     {
         correctnessType response = status[index];
         auto letter = guess[index];
 
-        if (response == CORRECT_POSITION) // erase all words where the letter at that position doesn't match
+        if (response == CORRECT_POSITION)
         {
+            if (correctPositions.count(letter) == 0)
+                correctPositions[letter] = 1;
+            else
+                correctPositions[letter]++;
+            // remove all words from dictionary that do not have this letter in this position
             for (auto it = dictionary.begin(); it != dictionary.end();)
             {
                 auto word = *it;
-                if (word[index] != letter)
+                if (word[index] == letter)
+                    ++it;
+                else
+                    it = dictionary.erase(it);
+            }
+        }
+        else
+        {
+            // remove all words from dictionary that have this letter in this (wrong) position
+            for (auto it = dictionary.begin(); it != dictionary.end();)
+            {
+                auto word = *it;
+                if (word[index] == letter)
                     it = dictionary.erase(it);
                 else
                     ++it;
             }
         }
-        // if it's the incorrect position
-        // for each dictionary word
-        // if word contains letter and that letter's position isn't already a CORRECT_POSITION, keep
-        else if (response == WRONG_POSITION)
+        if (response == WRONG_POSITION)
         {
+            if (wrongPositions.count(letter) == 0)
+                wrongPositions[letter] = 1;
+            else
+                wrongPositions[letter]++;
+        }
+        else if (response == WRONG_LETTER)
+        {
+            if (wrongLetters.count(letter) == 0)
+                wrongLetters[letter] = 1;
+            else
+                wrongLetters[letter]++;
+        }
+    }
+
+    for (auto item : wrongLetters)
+    {
+        auto letter = item.first;
+        auto count = item.second + correctPositions.count(letter);
+        // if no instances of this letter are in wrongPosition, then we know it's not in the word
+        if (wrongPositions.count(letter) == 0 && correctPositions.count(letter) == 0)
+        {
+            // remove all words in dictionary with that letter
             for (auto it = dictionary.begin(); it != dictionary.end();)
             {
                 auto word = *it;
                 bool foundLetter = false;
                 for (int i = 0; i < word.length(); ++i)
                 {
-                    if (word[i] == letter && status[i] != CORRECT_POSITION)
+                    if (word[i] == letter)
                     {
                         foundLetter = true;
                         break;
                     }
                 }
                 if (foundLetter)
-                    ++it;
-                else
                     it = dictionary.erase(it);
+                else
+                    ++it;
             }
         }
-        // if it's the incorrect letter
-        // for each dictionary word
-        // if word contains letter and that letter's position isn't already CORRECT_POSITION or INCORRECT_POSITION, exclude
-        else if (response == WRONG_LETTER)
+    }
+
+    for (auto item : wrongPositions)
+    {
+        auto letter = item.first;
+        auto count = item.second + correctPositions.count(letter);
+        // if there are `n` instances of a letter in wrongPosition and 0 in wrongLetter, then at least `n` of that letter is in the word
+        if (wrongLetters.count(letter) == 0)
         {
+            // remove all words in dictionary with less than `n` of that letter
             for (auto it = dictionary.begin(); it != dictionary.end();)
             {
                 auto word = *it;
-                if (word[index] == letter)
+                auto letterCount = 0;
+                for (int i = 0; i < word.length(); ++i)
+                    if (word[i] == letter)
+                        letterCount++;
+
+                if (letterCount < count)
+                    it = dictionary.erase(it);
+                else
+                    ++it;
+            }
+        }
+        // if there are `n` instances of a letter in wrongPosition and 1+ in wrongLetter, then exactly `n` of that letter is in the word
+        else
+        {
+            // remove all words in dictionary with less than `n` of that letter
+            for (auto it = dictionary.begin(); it != dictionary.end();)
+            {
+                auto word = *it;
+                auto letterCount = 0;
+                for (int i = 0; i < word.length(); ++i)
+                    if (word[i] == letter)
+                        letterCount++;
+
+                if (letterCount != count)
                     it = dictionary.erase(it);
                 else
                     ++it;
@@ -92,10 +154,14 @@ void parseGuess(std::set<std::string> &dictionary, std::string &guess)
 
 int main()
 {
-    std::set<std::string> dictionary;
-
+    std::vector<std::string> dictionary;
     auto wordCount = initializeDictionary(dictionary, "large_dictionary.txt", WORD_SIZE);
     std::cout << wordCount << " words added to dictionary." << std::endl;
+
+    std::cout << "Sorting...";
+    std::sort(dictionary.begin(), dictionary.end(), [](std::string s1, std::string s2)
+              { return frequencyIndex(s1) < frequencyIndex(s2); });
+    std::cout << "done" << std::endl;
 
     std::cout << "Welcome to Wordle Helper! ";
 

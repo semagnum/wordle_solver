@@ -1,0 +1,1 @@
+const unsigned int WORD_SIZE = 5;
