@@ -10,8 +10,10 @@ test
 beast
 ```
 
-I ignore them to keep the repository minimal and flexible with different dictionaries.
-
+If you would like to provide a different filename, you can do so on this line, in `"main.cc"`:
+```cpp
+auto wordCount = initializeDictionary(dictionary, "large_dictionary.txt", WORD_SIZE);
+```
 ## Compiling the solver
 
 I locally use `g++`, but any compiler should do. I'd highly recommend Gitpod to tinker and run all this in your browser:
